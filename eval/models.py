@@ -14,7 +14,7 @@ class Like(models.Model) :
 class Review(TimeStampModel) :
     user    = models.ForeignKey('users.User', on_delete=CASCADE, related_name='review_by_user')
     course  = models.ForeignKey('courses.Course', on_delete=CASCADE, related_name='review_by_course')
-    stars   = models.IntegerField(max_length=1, default=5)
+    stars   = models.IntegerField(default=5)
 
     class Meta :
         db_table = 'reviews'

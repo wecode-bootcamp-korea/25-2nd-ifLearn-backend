@@ -14,12 +14,12 @@ class Order(TimeStampModel) :
     user    = models.ForeignKey('users.User', on_delete=CASCADE, related_name='order')
     
     class Meta :
-        db_table = 'carts'
+        db_table = 'orders'
 
 class OrderItem(TimeStampModel) :
     order   = models.ForeignKey('Order', on_delete=CASCADE , related_name='order_item_by_order')
     course  = models.ForeignKey('courses.Course', on_delete=CASCADE, related_name='order_item_by_course')
     
     class Meta :
-        db_table = 'carts'
+        db_table = 'order_items'
 
