@@ -1,7 +1,22 @@
 from django.http    import JsonResponse
 from django.views   import View 
-from courses.models import Course
+from courses.models import Category, Course, SubCategory
 
+class CategoryView(View) :
+    def get(self,request) :
+        subcategory_queryset= SubCategory.objects.values('id','name','category_id')
+        category_queryset   = Category.objects.values('name', 'id')
+        result              = []
+
+        for category in category_queryset :
+            result.append({
+            category["name"] : [{
+                "id" : sub["id"],
+                "subcategory" : sub["name"]}
+            for sub in subcategory_queryset if sub["category_id"] == category["id"]]
+            })
+
+        return JsonResponse({"reuslt" : result})
 
 class CourseView(View) :
     def get(self,request) :
