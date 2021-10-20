@@ -288,3 +288,13 @@ tags
 # End of https://www.toptal.com/developers/gitignore/api/python,visualstudiocode,pycharm,vim
 
 my_settings.py
+
+csv/
+*.csv
+eval/migrations/0003_auto_20211020_1725.py
+.gitignore
+orders/migrations/0002_auto_20211020_1725.py
+users/migrations/0002_auto_20211020_1725.py
+courses/migrations/0002_auto_20211020_1725.py
+carousels/migrations/0002_alter_carousel_deleted_at.py
+importcsv.py

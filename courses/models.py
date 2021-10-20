@@ -21,7 +21,7 @@ class SubCategory(TimeStampModel):
         return self.name
 
 class Course(TimeStampModel):
-    name                  = models.CharField(max_length = 20)
+    name                  = models.CharField(max_length = 100)
     summary               = models.TextField()
     detail                = models.TextField()
     thumbnail_url         = models.TextField()
@@ -29,12 +29,12 @@ class Course(TimeStampModel):
     price                 = models.DecimalField(max_digits = 10, decimal_places = 2)
     learning_period_month = models.IntegerField()
     level                 = models.ForeignKey('Level', on_delete       = models.CASCADE, related_name = 'courses_by_level')
-    subcatgory            = models.ForeignKey('SubCategory', on_delete = models.CASCADE, related_name = 'courses_by_subcategory')
+    subcategory           = models.ForeignKey('SubCategory', on_delete = models.CASCADE, related_name = 'courses_by_subcategory')
     sharer                = models.ForeignKey('users.User', on_delete   = models.CASCADE, related_name = 'courses_by_user')
 
 class Section(TimeStampModel):
-    name       = models.CharField(max_length = 20)
-    objectives = models.CharField(max_length = 20)
+    name       = models.CharField(max_length = 100)
+    objectives = models.CharField(max_length = 100)
     priority   = models.IntegerField()
     course     = models.ForeignKey('Course', on_delete = models.CASCADE, related_name = 'sections')
 
