@@ -152,6 +152,7 @@ CORS_ALLOW_HEADERS = (
     'user-agent',
     'x-csrftoken',
     'x-requested-with',
+    'range'
 )
 
 APPEND_SLASH = False

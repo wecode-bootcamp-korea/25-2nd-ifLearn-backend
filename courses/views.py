@@ -4,6 +4,7 @@ import mimetypes
 
 from wsgiref.util   import FileWrapper
 from django.http    import JsonResponse, StreamingHttpResponse
+from django.http.response import HttpResponse
 from django.views   import View 
 from courses.models import Category, Course,SubCategory, CourseHashtag
 
@@ -64,9 +65,9 @@ class CourseView(View) :
         })
 
 class RangeFileWrapper:
-    def __init__(self, filelike, blksize=1024*1024, offset=0, length=None):
-        self.filelike = filelike
-        self.filelike.seek(offset, os.SEEK_SET)
+    def __init__(self, file, blksize=8192, offset=0, length=None):
+        self.file = file
+        self.file.seek(offset, 0)
         self.remaining = length
         self.blksize = blksize
 
@@ -76,14 +77,14 @@ class RangeFileWrapper:
     def __next__(self):
         if self.remaining is None:
             # If remaining is None, we're reading the entire file.
-            data = self.filelike.read(self.blksize)
+            data = self.file.read(self.blksize)
             if data:
                 return data
             raise StopIteration()
         else:
             if self.remaining <= 0:
                 raise StopIteration()
-            data = self.filelike.read(min(self.remaining, self.blksize))
+            data = self.file.read(min(self.remaining, self.blksize))
             if not data:
                 raise StopIteration()
             self.remaining -= len(data)
@@ -100,6 +101,7 @@ class VideoPlayer(View) :
 
     def get_http_range(self,request) :
         range_header =request.META.get('HTTP_RANGE', '').strip()
+        # 띄어쓰기를 엄격하게 하지 않기 위해 \s* 을 계속 붙
         range_match = re.match(r'bytes\s*=\s*(\d+)\s*-\s*(\d*)',range_header, re.I)
         return range_match
 
@@ -115,6 +117,9 @@ class VideoPlayer(View) :
 
 
     def get(self,request,path) :
+        if not os.path.isfile(path) :
+            return JsonResponse({"MEESAGE" : "No file"}, status=204)
+
         size         = os.path.getsize(path)
         range_match  = self.get_http_range(request)
         content_type = self.get_content_type(path)
@@ -127,7 +132,7 @@ class VideoPlayer(View) :
             resp['Content-Length']  = str(length)
             resp['Content-Range']   = f'bytes {first_byte}-{last_byte}/{size}'    
         else:
-            resp = StreamingHttpResponse(FileWrapper(video_file), content_type=content_type)
+            resp = HttpResponse(FileWrapper(video_file), content_type=content_type)
             resp['Content-Length'] = str(size)    
         
         resp['Accept-Ranges'] = 'bytes'

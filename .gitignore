@@ -301,3 +301,5 @@ importcsv.py
 courses/migrations/0003_auto_20211020_1809.py
 users/migrations/0003_alter_user_phone_number.py
 .DS_Store
+
+*.mp4
