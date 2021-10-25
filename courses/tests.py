@@ -53,8 +53,8 @@ class VideoPlayerTest(TestCase) :
         response = self.client.get('/course/test_video.mp4').content
         self.assertEqual(response[:20], b'\x00\x00\x00\x18ftypiso6\x00\x00\x00\x01iso6')
 
-    # def test_get_no_file(self) :
-    #     response = self.client.get('/course/noExistFile.mp4')
-    #     # json 끼리 비교가 안되기 대문에 파이썬 데이터로 변경
-    #     self.assertEqual(response.json(), {"MEESAGE" : "No file"})
+    def test_get_no_file(self) :
+        response = self.client.get('/course/noExistFile.mp4')
+        # json 끼리 비교가 안되기 대문에 파이썬 데이터로 변경
+        self.assertEqual(response.json(), {"MEESAGE" : "No file"})
 

@@ -118,8 +118,7 @@ class VideoPlayer(View) :
 
     def get(self,request,path) :
         if not os.path.isfile(path) :
-            print("TEST CASE!!")
-            return JsonResponse({"MEESAGE" : "No file"}, status=204)
+            return JsonResponse({"MEESAGE" : "No file"}, status=400)
 
         size         = os.path.getsize(path)
         range_match  = self.get_http_range(request)
