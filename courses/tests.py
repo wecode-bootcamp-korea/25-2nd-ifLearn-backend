@@ -1,11 +1,12 @@
-import unittest
 import json
 import re
 
 from django.http.request import HttpRequest
-from courses.views  import VideoPlayer
+from django.test.client import Client
+from courses.views       import VideoPlayer
+from django.test         import TestCase
 
-class VideoPlayerTest(unittest.TestCase) :
+class VideoPlayerTest(TestCase) :
     test_cls = VideoPlayer()
     test_req = HttpRequest()
     
@@ -35,15 +36,6 @@ class VideoPlayerTest(unittest.TestCase) :
         range_match = re.match("(\d+)\s(\d*)","0 150")
         self.assertEqual(self.test_cls.get_range(size,range_match), (0,100-1))
 
-    def test_get_normal(self) :
-        path = 'test_video.mp4'
-        self.assertEqual(self.test_cls.get(self.test_req, path).content[:20], b'\x00\x00\x00\x18ftypiso6\x00\x00\x00\x01iso6')
-
-    def test_get_no_file(self) :
-        path = '!Q2w#E4r'
-        # json 끼리 비교가 안되기 대문에 파이썬 데이터로 변경
-        self.assertEqual(json.loads(self.test_cls.get(self.test_req, path).content), {"MEESAGE" : "No file"})
-
     def test_get_with_range(self) :
         path = 'test_video.mp4'
         test_req                    = HttpRequest()
@@ -56,3 +48,13 @@ class VideoPlayerTest(unittest.TestCase) :
         test_req.META['HTTP_RANGE'] = 'bytes = -200-150'
         # 마이너스가 붙으면, regex와 match되지 않아 range를 무시한다.
         self.assertEqual(self.test_cls.get(self.test_req, path).content[:20], b'\x00\x00\x00\x18ftypiso6\x00\x00\x00\x01iso6')
+
+    def test_get_normal(self) :
+        response = self.client.get('/course/test_video.mp4').content
+        self.assertEqual(response[:20], b'\x00\x00\x00\x18ftypiso6\x00\x00\x00\x01iso6')
+
+    # def test_get_no_file(self) :
+    #     response = self.client.get('/course/noExistFile.mp4')
+    #     # json 끼리 비교가 안되기 대문에 파이썬 데이터로 변경
+    #     self.assertEqual(response.json(), {"MEESAGE" : "No file"})
+
