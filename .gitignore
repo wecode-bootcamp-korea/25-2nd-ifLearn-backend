@@ -288,3 +288,10 @@ tags
 # End of https://www.toptal.com/developers/gitignore/api/python,visualstudiocode,pycharm,vim
 
 my_settings.py
+orders/migrations/0002_auto_20211025_1703.py
+users/migrations/0002_auto_20211025_1703.py
+courses/migrations/0002_auto_20211025_1703.py
+eval/migrations/0003_auto_20211025_1703.py
+carousels/migrations/0002_alter_carousel_deleted_at.py
+test_video.mp4
+.DS_Store
