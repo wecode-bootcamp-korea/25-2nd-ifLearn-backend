@@ -34,11 +34,11 @@ class CourseView(View) :
         course_queryset = Course.objects.select_related('level','subcategory', 'subcategory__category', 'sharer'
         ).values('id','name','summary','thumbnail_url','price','level__name', 'subcategory__name', 'subcategory__category__name', 'sharer__nickname')[:20]
         
-        course_ids = [c.id for c in course_queryset]
+        course_ids = [c["id"] for c in course_queryset]
 
         hashtag_queryset    = CourseHashtag.objects.select_related('hashtag','course').values('course__id','hashtag__name','hashtag__id').filter(course__id__in = course_ids)
         result          = []
-        for course in course_queryset[:20] :
+        for course in course_queryset :
             result.append(
             {
                 "id" : course["id"],
