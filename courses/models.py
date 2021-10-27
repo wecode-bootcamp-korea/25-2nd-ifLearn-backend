@@ -34,7 +34,6 @@ class Course(TimeStampModel):
 
 class Section(TimeStampModel):
     name       = models.CharField(max_length = 100)
-    objectives = models.CharField(max_length = 100)
     priority   = models.IntegerField()
     course     = models.ForeignKey('Course', on_delete = models.CASCADE, related_name = 'sections')
 
@@ -67,8 +66,8 @@ class LectureCompletion(TimeStampModel):
 
 class CourseInfo(TimeStampModel):
     name      = models.CharField(max_length = 20)
-    info_type = models.ForeignKey('InfoType', on_delete = models.CASCADE, related_name = 'cousre_info_by_type')
-    course    = models.ForeignKey('Course', on_delete   = models.CASCADE, related_name = 'cousre_info_by_course')
+    info_type = models.ForeignKey('InfoType', on_delete = models.CASCADE, related_name = 'course_info_by_type')
+    course    = models.ForeignKey('Course', on_delete   = models.CASCADE, related_name = 'course_info_by_course')
 
     class Meta:
         db_table = 'course_info'
