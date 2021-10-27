@@ -3,9 +3,14 @@ import re
 import mimetypes
 
 from wsgiref.util   import FileWrapper
+
 from django.http    import JsonResponse, StreamingHttpResponse
 from django.http.response import HttpResponse
 from django.views   import View 
+from django.db.models import Q, Avg
+
+from courses.models import Category, Course, SubCategory, Hashtag
+
 
 
 class RangeFileWrapper:
@@ -82,4 +87,24 @@ class VideoPlayer(View) :
         resp['Accept-Ranges'] = 'bytes'
         
         return resp
+
+class CategoryListView(View):
+    def get(self, request):
+        categories = Category.objects.all()
+        hashtags   = Hashtag.objects.all()
+
+        result = [{
+            "id"           : category.id,
+            "name"         : category.name,
+            "sub_category" : [{
+                "id"   : subcategory.id,
+                "name" : subcategory.name,
+                "tags"  : [{
+                    "id"   : hashtag.id,
+                    "name" : hashtag.name,
+
+                    } for hashtag in hashtags]
+                } for subcategory in category.sub_categories.all()] 
+            } for category in categories]
         
+        return JsonResponse({"result" : result}, status = 200)
