@@ -66,7 +66,7 @@ class LectureCompletion(TimeStampModel):
         db_table = 'lecture_completions'
 
 class CourseInfo(TimeStampModel):
-    name      = models.CharField(max_length = 20)
+    name      = models.CharField(max_length = 100)
     info_type = models.ForeignKey('InfoType', on_delete = models.CASCADE, related_name = 'cousre_info_by_type')
     course    = models.ForeignKey('Course', on_delete   = models.CASCADE, related_name = 'cousre_info_by_course')
 

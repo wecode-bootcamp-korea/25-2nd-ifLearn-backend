@@ -1,13 +1,16 @@
 import os
 import re
 import mimetypes
+import jwt
+from ifLearn.settings import SECRET_KEY, ALGORITHM
 
 from wsgiref.util   import FileWrapper
 from django.http    import JsonResponse, StreamingHttpResponse
 from django.http.response import HttpResponse
 from django.views   import View 
-from courses.models import Category, Course,SubCategory, CourseHashtag
-
+from courses.models import Category, Course, SubCategory, CourseHashtag, Lecture, LectureCompletion
+from django.db      import connection
+from users.models   import User
 
 class CategoryView(View) :
     def get(self,request) :
@@ -32,7 +35,7 @@ class CourseView(View) :
     def get(self,request) :
         
         course_queryset = Course.objects.select_related('level','subcategory', 'subcategory__category', 'sharer'
-        ).values('id','name','summary','thumbnail_url','price','level__name', 'subcategory__name', 'subcategory__category__name', 'sharer__nickname')[:20]
+        ).values('id','name','summary','thumbnail_url','price','level__name', 'subcategory__name', 'subcategory__category__name', 'sharer__nickname')[:100]
         
         course_ids = [c["id"] for c in course_queryset]
 
@@ -137,4 +140,63 @@ class VideoPlayer(View) :
         resp['Accept-Ranges'] = 'bytes'
         
         return resp
+    
+
+class VideoLayoutView(View) :
+    def get_user_id(self,request) :
+        if "Authorization" in request.headers :
+            access_token = request.headers.get('Authorization')
+            payload      = jwt.decode(access_token, SECRET_KEY, ALGORITHM)
+            login_user_id= User.objects.get(id=payload['id']).id
+            return login_user_id
+
+        else : return False
+
+    def get(self,request,course_id) :
+        lectures = Lecture.objects.select_related('section', 'section__course').values(
+            'section__course__id', 'section__course__name', 'section__course__learning_period_month',
+            'section__id','section__name',  'section__priority',
+            'id', 'name', 'storage_path', 'priority', 'play_time'
+            ).prefetch_related('lecture_completion_by_lecture'
+            ).filter(section__course__id=course_id)
         
+        L_id_list = [L["id"] for L in lectures]
+
+        _L = lectures[0]
+        
+        result = {
+            "course_id" : _L["section__course__id"],
+            "course_name" : _L["section__course__name"],
+            "period" : _L["section__course__learning_period_month"],
+            "section_list" : [{
+                "setion_id" : S["section__id"],
+                "section_name": S["section__name"],
+                "lecture_list" :[{
+                    "lecture_name" : L["name"],
+                    "lecture_id" : L["id"],
+                    "lecture_video_url" : L["storage_path"],
+                    "finished" : 0
+                } for L in lectures if L["section__id"] == S["section__id"]]}
+            for S in lectures]
+        }
+
+        user_id = self.get_user_id(request)
+        if user_id : 
+            finish_queryset = LectureCompletion.objects.select_related("lecture__section__course"
+            ).values("id", "lecture__section__course__id"
+            ).filter(lecture__section__course__id=course_id)
+
+            finish_list = [F["id"] for F in finish_queryset]
+
+            #print("TEST ::: ", [x for x in result["section_list"]])
+
+            for section in result["section_list"] :
+                for lecture in section["lecture_list"] :
+                    print(lecture)
+                    if lecture["lecture_id"] in finish_list :
+                        print(result["section_list"]["lecture_list"]) # ["lecture_list"]) # [lecture]["finished"] = 1
+
+        
+        # print(connection.queries)
+
+        return JsonResponse(result)
