@@ -6,6 +6,8 @@ from django.test.client import Client
 from courses.views       import VideoPlayer
 from django.test         import TestCase
 
+from courses.models import SubCategory, Category, Course, Hashtag 
+
 class VideoPlayerTest(TestCase) :
     test_cls = VideoPlayer()
     test_req = HttpRequest()
@@ -58,3 +60,120 @@ class VideoPlayerTest(TestCase) :
         # json 끼리 비교가 안되기 대문에 파이썬 데이터로 변경
         self.assertEqual(response.json(), {"MEESAGE" : "No file"})
 
+class CategoryViewTest(TestCase):
+    def setUp(self):
+
+        category_list = [
+            Category(
+                id  = 1,
+                name = 'developing',
+            ),
+            Category(
+                id  = 2,
+                name = 'Security',
+            ),
+            Category(
+                id  = 3,
+                name = 'Creative',
+            ),
+            Category(
+                id  = 4,
+                name = 'Marketing',
+            ),
+            Category(
+                id  = 5,
+                name = 'Language',
+            ),
+            Category(
+                id  = 6,
+                name = 'Career',
+            ),
+            Category(
+                id  = 7,
+                name = 'Culture',
+            )
+        ]
+
+        Category.objects.bulk_create(category_list)
+
+        subcategory_list = [
+            SubCategory(
+                id          = 1,
+                name        = 'web-develpoing',
+                category_id = 1,
+            ),
+            SubCategory(
+                id          = 2,
+                name        = 'front-end',
+                category_id = 1,
+            ),
+            SubCategory(
+                id          = 3,
+                name        = 'back-end',
+                category_id = 1,
+            ),
+            SubCategory(
+                id          = 4,
+                name        = 'fullstack',
+                category_id = 2,
+            ),
+            SubCategory(
+                id          = 5,
+                name        = 'mobile',
+                category_id = 2,
+            ),
+            SubCategory(
+                id          = 6,
+                name        = 'programming-language',
+                category_id = 2,
+            ),
+            SubCategory(
+                id          = 7,
+                name        = 'data structure',
+                category_id = 3,
+            )
+        ]
+
+        SubCategory.objects.bulk_create(subcategory_list)
+
+        hashtag_list = [
+            Hashtag(
+                id = 1,
+                name = 'HTML/CSS'
+            ),
+            Hashtag(
+                id = 2,
+                name = 'JavaScript'
+            ),
+            Hashtag(
+                id = 3,
+                name = 'Java'
+            ),
+        ]
+
+        Hashtag.objects.bulk_create(hashtag_list)
+
+    def tearDown(self):
+        Category.objects.all().delete()
+        SubCategory.objects.all().delete()
+        Hashtag.objects.all().delete()
+    
+    def test_category_list_get_success(self):
+        client = Client()
+        response = client.get('/courses/categories', content_type = "application/json")
+        self.maxDiff = None
+        self.assertEqual(response.json(), {
+            "result" : [{
+                "id"   : category.id,
+                "name" : category.name,
+                "sub_category" : [{
+                    "id"   : subcategory.id,
+                    "name" : subcategory.name,
+                    "tags"  : [{
+                        "id"   : hashtag.id,
+                        "name" : hashtag.name,
+                    } for hashtag in Hashtag.objects.all()]
+                } for subcategory in category.sub_categories.all()]
+            } for category in Category.objects.all()] 
+            } 
+        )
