@@ -5,9 +5,10 @@ from django.test.client     import Client
 from django.test            import TestCase
 
 from courses.views          import VideoPlayer, VideoLayoutView
-from courses.models         import Category, Lecture, LectureCompletion, Level, Section, Course, SubCategory, Hashtag
+from courses.models         import Category, CourseInfo, InfoType, Lecture, LectureCompletion, Level, Section, Course, SubCategory, Hashtag
 from users.models           import User
-from eval.models import Review
+from eval.models           import Review 
+from orders.models import Order, OrderItem
 
 class VideoPlayerTest(TestCase) :
     test_cls = VideoPlayer()
@@ -304,10 +305,113 @@ class CourseListTest(TestCase):
                     stars     = 2,
                 )]
         )
-  
 
     def tearDown(self):
         Category.objects.all().delete()
+        SubCategory.objects.all().delete()
+        Hashtag.objects.all().delete()
+    
+    def test_category_list_get_success(self):
+        client = Client()
+        response = client.get('/courses/categories', content_type = "application/json")
+        self.maxDiff = None
+        self.assertEqual(response.json(), {
+            "result" : [{
+                "id"   : category.id,
+                "name" : category.name,
+                "sub_category" : [{
+                    "id"   : subcategory.id,
+                    "name" : subcategory.name,
+                    "tags"  : [{
+                        "id"   : hashtag.id,
+                        "name" : hashtag.name,
+                    } for hashtag in Hashtag.objects.all()]
+                } for subcategory in category.sub_categories.all()]
+            } for category in Category.objects.all()] 
+            } 
+        )
+
+class VideoLayoutTest(TestCase) :
+    INSTANCE = VideoLayoutView()
+
+    def setUp(self):
+        User.objects.create(
+            id          = 1,
+            nickname    = "test_name",
+            email       = "test1@sample.com",
+            phone_number= "010-0000-0000",
+            introduce   = "",
+            sharer      = 1            
+        )
+
+        Level.objects.create(
+            id          = 1,
+            name        = "test_level"
+        )
+        
+        Category.objects.create(
+            id          = 1,
+            name        = "test_cate"
+        )
+
+        SubCategory.objects.create(
+            id          = 1,
+            name        = "test_subcate",
+            category_id = 1
+        )
+
+        Course.objects.create(
+            id                      = 1,
+            name                    = "test_course",
+            summary                 = "summary",
+            detail                  = "detail",
+            thumbnail_url           = "url",
+            visible                 = 1,
+            price                   = 77000,
+            learning_period_month   = 999,
+            level_id                = 1,
+            sharer_id               = 1,
+            subcategory_id          = 1
+        )
+
+        Course.objects.create(
+            id                      = 999,
+            name                    = "test_course",
+            summary                 = "summary",
+            detail                  = "detail",
+            thumbnail_url           = "url",
+            visible                 = 1,
+            price                   = 77000,
+            learning_period_month   = 999,
+            level_id                = 1,
+            sharer_id               = 1,
+            subcategory_id          = 1
+        )
+
+        Section.objects.create(
+            id          = 1,
+            name        = "test_section",
+            priority    = 1,
+            course_id   = 1
+        )
+
+        Lecture.objects.create(
+            id           = 1,
+            name         = "test_lecture",
+            storage_key  = "blank",
+            storage_path = "https://www.naver.com",
+            priority     = 1,
+            play_time    = 120,
+            section_id   = 1      
+        )
+
+        LectureCompletion.objects.create(
+            id          = 1,
+            user_id     = 1,
+            lecture_id  = 1
+        )
+
+    def tearDown(self) :
         User.objects.all().delete()
         SubCategory.objects.all().delete()
         Course.objects.all().delete()
@@ -345,3 +449,287 @@ class CourseListTest(TestCase):
                 }]
             }
         )
+
+    def test_fail_get_course_index_out_of_range(self) :
+        client = Client()
+        resp = client.get('/course/video/9999')
+        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(resp.json(), {"MESSAGE" : "invalid_course_id"})
+
+    def test_fail_get_course_no_lecture(self) :
+        client = Client()
+        resp = client.get('/course/video/999')
+        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(resp.json(), {"MESSAGE" : "no_lecture_in_course"})
+
+class CourseViewTest(TestCase):
+    def setUp(self):
+        User.objects.create(
+            nickname = 'UU',
+            email    = 'abc@naver.com',
+            kakao_id = '1',
+        )
+
+        category_list = [
+            Category(
+                id  = 1,
+                name = 'developing',
+            ),
+            Category(
+                id  = 2,
+                name = 'Security',
+            ),
+        ]
+
+        Category.objects.bulk_create(category_list)
+
+        subcategory_list = [
+            SubCategory(
+                id          = 1,
+                name        = 'web-developing',
+                category_id = 1,
+            ),
+            SubCategory(
+                id          = 2,
+                name        = 'front-end',
+                category_id = 1,
+            ),
+        ]
+
+        SubCategory.objects.bulk_create(subcategory_list)
+
+        level_list = [
+            Level(
+                id = 1,
+                name = '1'
+            ),
+            Level(
+                id =2,
+                name = '2'
+            ),
+            Level(
+                id =3,
+                name = '3'
+            ),
+        ]
+
+        Level.objects.bulk_create(level_list)
+
+        Course.objects.create(
+            id = 1 ,
+            name = "python 기초",
+            summary = "기초를 잘 다지자",
+            detail = "detail cut",
+            thumbnail_url = "thumb",
+            visible = 1,
+            price = 10000,
+            learning_period_month = 999,
+            subcategory_id = 1,
+            sharer_id = 1,
+            level_id = 2,
+        )
+
+        hashtag_list = [
+            Hashtag(
+                id = 1,
+                name = 'HTML/CSS'
+            ),
+            Hashtag(
+                id = 2,
+                name = 'JavaScript'
+            ),
+            Hashtag(
+                id = 3,
+                name = 'Java'
+            ),
+        ]
+
+        Hashtag.objects.bulk_create(hashtag_list)
+        
+        
+        section_list = [
+            Section(
+                id =1,
+                name = '첫번째',
+                #objectives = '1',
+                priority = 1,
+                course_id = 1,
+            ),
+
+            Section(
+                id=2,
+                name = '두번째',
+                #objectives = '2',
+                priority = 1,
+                course_id = 1,
+            )
+        ]
+
+        Section.objects.bulk_create(section_list)
+
+        lecture_list = [
+            Lecture(
+                id = 1 ,
+                name = '1강',
+                storage_key = '1',
+                storage_path = '1',
+                priority = 1,
+                play_time = 3,
+                section_id = 1,
+            ),
+            Lecture(
+                id =2 ,
+                name = '2강',
+                storage_key = '1',
+                storage_path = '1',
+                priority = 1,
+                play_time = 3,
+                section_id = 1,
+            ),
+            Lecture(
+                id =3,
+                name = '1강',
+                storage_key = '1',
+                storage_path = '1',
+                priority = 1,
+                play_time = 3,
+                section_id = 2,
+            ),
+            Lecture(
+                id =4,
+                name = '2강',
+                storage_key = '1',
+                storage_path = '1',
+                priority = 1,
+                play_time = 3,
+                section_id = 2,
+            )]
+            
+        Lecture.objects.bulk_create(lecture_list)
+
+        InfoType.objects.bulk_create([
+            InfoType(id=1, name = 'whatolearn'),
+            InfoType(id=2, name = 'recommend'),
+            InfoType(id=3, name = 'precourse'),
+            ]
+        )
+
+        CourseInfo.objects.bulk_create([
+            CourseInfo(
+                id = 1,
+                name = '1',
+                info_type_id = 1,
+                course_id = 1,
+            ),
+            CourseInfo(
+                id = 2,
+                name = '2',
+                info_type_id = 2,
+                course_id = 1,
+            ),
+            CourseInfo(
+                id = 3,
+                name = '3',
+                info_type_id = 3,
+                course_id = 1,
+                )
+            ]
+        )
+
+        Review.objects.create(
+                id = 1,
+                user_id = 1,
+                course_id = 1,
+                stars = 1,
+        )
+
+        Order.objects.create(
+            id = 1,
+            user_id = 1,
+            #course_id = 1,
+        )
+        
+        OrderItem.objects.create(
+            id = 1,
+            order_id = 1,
+            course_id = 1,
+        )
+
+    def tearDown(self):
+        Category.objects.all().delete()
+        SubCategory.objects.all().delete()
+        Hashtag.objects.all().delete()
+    
+    def test_course_get_success(self):
+        client = Client()
+        response = client.get('/courses/course/1', content_type = "application/json")
+        
+        self.maxDiff = None
+        self.assertEqual(response.json(), {
+            "result" : {
+                "id"      : 1,
+                "name"    : "python 기초",
+                "summary" : "기초를 잘 다지자",
+                "detail"  : "detail cut",
+                "thumbnail"   : "thumb",
+                "price"       : '10000.00',
+                "subcategory" : "web-developing",
+                "category"    : "developing",
+                "course_info" : [
+                    {
+                    "id"      : 1,
+                    "name"    : "1",
+                    "info_type_id": 1
+                    },
+                    {
+                    "id"      : 2,
+                    "name"    : "2",
+                    "info_type_id": 2 
+                    },
+                    {
+                    "id"      : 3,
+                    "name"    : "3",
+                    "info_type_id": 3 
+                    }
+                ],
+                "sections"    : [{
+                    "id"      : 1,
+                    "name"    : '첫번째',
+                    "lectures": [{
+                        "id"  : 1,
+                        "name"  : '1강',
+                        "play_time"    : 3,
+                        "storage_key"  : '1',
+                        "storage_path" : '1',
+                    },
+                    {
+                        "id"  : 2,
+                        "name"  : '2강',
+                        "play_time"    : 3,
+                        "storage_key"  : '1',
+                        "storage_path" : '1',
+                    }],
+                },
+                {
+                    "id"      : 2,
+                    "name"    : '두번째',
+                    "lectures": [{
+                        "id"  : 3,
+                        "name"  : '1강',
+                        "play_time"    : 3,
+                        "storage_key"  : '1',
+                        "storage_path" : '1',
+                    },
+                    {
+                        "id"  : 4,
+                        "name"  : '2강',
+                        "play_time"    : 3,
+                        "storage_key"  : '1',
+                        "storage_path" : '1',
+                    }]
+                }],
+                "level"  : '2',
+                "stars"  : 1.0,
+                "people" : 1,
+            }
+        })

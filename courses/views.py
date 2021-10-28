@@ -99,7 +99,7 @@ class CategoryListView(View):
             "sub_category" : [{
                 "id"   : subcategory.id,
                 "name" : subcategory.name,
-                "tags"  : [{
+                "tags" : [{
                     "id"   : hashtag.id,
                     "name" : hashtag.name,
 
@@ -262,5 +262,45 @@ class CourseListView(View):
                     "level": course.level.name,
                     "star-number" : course.review_by_course.aggregate(star=Avg('stars'))['star'],
                 })
+
+        return JsonResponse({"result" : result}, status = 200)
+
+class CourseView(View):
+    def get(self, request, course_id):
+        try:
+            course = Course.objects.get(id = course_id)
+        
+        except Course.DoesNotExist:
+            return JsonResponse({"message" : "DOES_NOT_EXIST"}, status = 200)
+
+        result = {
+            "id"      : course.id,
+            "name"    : course.name,
+            "summary" : course.summary,
+            "detail"  : course.detail,
+            "thumbnail"   : course.thumbnail_url,
+            "price"       : course.price,
+            "subcategory" : course.subcategory.name,
+            "category"    : course.subcategory.category.name,
+            "course_info" : [{
+                "id"      : info.id,
+                "name"    : info.name,
+                "info_type_id": info.info_type_id
+            } for info in course.course_info_by_course.all()],
+            "sections"    : [{
+                "id"      : section.id,
+                "name"    : section.name,
+                "lectures": [{
+                    "id"  : lecture.id,
+                    "name"  : lecture.name,
+                    "play_time"    : lecture.play_time,
+                    "storage_key"  : lecture.storage_key,
+                    "storage_path" : lecture.storage_path,
+                } for lecture in section.lecture.all()],
+            } for section in course.sections.all()],
+            "level"  : course.level.name,
+            "stars"  : course.review_by_course.aggregate(star=Avg('stars'))['star'],
+            "people" : len(course.order_item_by_course.all()),
+        }
 
         return JsonResponse({"result" : result}, status = 200)
