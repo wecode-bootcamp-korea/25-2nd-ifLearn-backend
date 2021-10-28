@@ -9,9 +9,9 @@ from django.views           import View
 from django.db.models       import Q, Avg
 
 from ifLearn.settings       import SECRET_KEY, ALGORITHM
-from courses.models         import Category, Course, Hashtag, Lecture, LectureCompletion
-from users.models           import User
 
+from courses.models         import Category, Course, SubCategory , Hashtag, Lecture, LectureCompletion
+from users.models           import User
 
 class RangeFileWrapper:
     def __init__(self, file, blksize=8192, offset=0, length=None):
@@ -222,3 +222,45 @@ class LectureDetail(View) :
             "lecture_runtime"   : lecture.play_time,
             "finished"          : int(finish_queryset.exists())
         }, status= 200)
+        
+class CourseListView(View):
+    def get(self, request, category_id = None, sub_category_id = None):
+
+        page   = request.GET.get('page', 1)
+        level  = request.GET.getlist('level', None)
+        search = request.GET.get('search', None)
+
+        sub_category_q = Q()
+        course_q       = Q()
+
+        if category_id:
+            sub_category_q.add(Q(category_id = category_id), sub_category_q.AND)
+        
+        if sub_category_id:
+            sub_category_q.add(Q(id = sub_category_id), sub_category_q.AND)
+
+        if level:
+            course_q.add(Q(level__in = level), course_q.AND)
+
+        if search:
+            course_q.add(Q(name__icontains = search), course_q.AND)
+
+        sub_categories = SubCategory.objects.filter(sub_category_q).prefetch_related('courses_by_subcategory')
+
+        result = []
+
+        for sub_category in sub_categories:
+            for course in sub_category.courses_by_subcategory.filter(course_q):
+
+                result.append({
+                    "id": course.id,
+                    "thumbnail": course.thumbnail_url,
+                    "title": course.name,
+                    "author" :course.sharer.nickname,
+                    "price": course.price,
+                    "summary": course.summary,
+                    "level": course.level.name,
+                    "star-number" : course.review_by_course.aggregate(star=Avg('stars'))['star'],
+                })
+
+        return JsonResponse({"result" : result}, status = 200)
