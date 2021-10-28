@@ -4,7 +4,6 @@ from core.models    import TimeStampModel
 
 class User(TimeStampModel) :
     nickname     = models.CharField(max_length = 100)
-    password     = models.CharField(max_length = 200)
     email        = models.CharField(max_length = 100)
     phone_number = models.CharField(max_length = 13, blank=True)
     introduce    = models.TextField(default = '', blank=True)
