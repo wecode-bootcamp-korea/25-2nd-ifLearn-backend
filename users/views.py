@@ -20,6 +20,8 @@ class KaKaoLoginView(View):
                 return JsonResponse({'message' : 'INVALID TOKEN'}, status = 401)
 
             user_information = response.json()
+            nickname         = user_information.get('properties').get('nickname')
+            email            = user_information.get('kakao_account').get('email')
 
         except KeyError:
             return JsonResponse({'message' : 'KEY_ERROR'}, status = 400)
@@ -30,6 +32,10 @@ class KaKaoLoginView(View):
         user = User.objects.get_or_create(
             kakao_id   = user_information.get('id'),
         )
+
+        user[0].nickname = nickname
+        user[0].email    = email
+        user[0].save()
 
         encoded_jwt = jwt.encode({'id' : user[0].id}, SECRET_KEY, algorithm = ALGORITHM)
         return JsonResponse({'access_token' : encoded_jwt}, status = 200)
