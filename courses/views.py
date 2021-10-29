@@ -172,7 +172,7 @@ class VideoLayoutView(View) :
             "course_id" : course.id,
             "course_name" : course.name,
             "period" : course.learning_period_month,
-            "section_length" : course.lectures_count,
+            "section_length" : int(course.lectures_count),
             "section_list" : [{
                 "section_id" : S.id,
                 "section_name" : S.name,
