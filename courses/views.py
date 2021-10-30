@@ -10,6 +10,7 @@ from django.http.response import HttpResponse
 from django.views   import View 
 from django.db      import connection
 from django.db.models import Case, Value, When
+from wsgiref.util     import FileWrapper
 
 from ifLearn.settings import SECRET_KEY, ALGORITHM
 from users.models     import User
