@@ -6,7 +6,7 @@ from wsgiref.util           import FileWrapper
 from django.http            import JsonResponse, StreamingHttpResponse
 from django.http.response   import HttpResponse
 from django.views           import View 
-from django.db.models       import Q, Avg
+from django.db.models       import Q, Avg, Case, Value, When
 
 from ifLearn.settings       import SECRET_KEY, ALGORITHM
 from courses.models         import Category, Course, Hashtag, Lecture, LectureCompletion
@@ -109,6 +109,7 @@ class CategoryListView(View):
         
         return JsonResponse({"result" : result}, status = 200)
 
+
 class VideoLayoutView(View) :
     def get_user_id(self,request) :
         if "Authorization" in request.headers :
@@ -117,87 +118,36 @@ class VideoLayoutView(View) :
             login_user_id= User.objects.get(id=payload['id']).id
             return login_user_id
 
-        else : return False
-    
-    def get_S_list(self,lectures) :
-        try :
-            S_id_list = [(L["section__id"],L["section__name"]) for L in lectures]
-            S_id_list = list(set(S_id_list))
-            S_id_list.sort()
-            return S_id_list
-        except KeyError :
-            return False
+        else : return -1
 
-    def check_user_finished_lecture(self,course_id, result,user_id) :
-        try :
-            finish_queryset = LectureCompletion.objects.select_related("lecture__section__course"
-                ).values("lecture_id", "lecture__section__course__id"
-                ).filter(lecture__section__course__id=course_id, user_id=user_id)
+    # 8000/course/course_id
+    def get(self, request, course_id) :
+        user_id = self.get_user_id(request)
+        course = Course.objects.annotate(lectures_count = Count("sections__lecture")).prefetch_related('sections', Prefetch('sections__lecture', queryset=Lecture.objects.annotate(
+            is_finished=Case(When(lecture_completion_by_lecture__user_id=user_id, then=Value(1)),
+                             default=Value(0))))).get(id = course_id)
 
-            finish_list = [F["lecture_id"] for F in finish_queryset]
-
-            for section in result["section_list"] :
-                for lecture in section["lecture_list"] :
-                    if lecture["lecture_id"] in finish_list :
-                        lecture["finished"] = 1
-            
-            return (True, result)
-        except KeyError :
-            return (False, "Key error in result")
-
-    key_match = {
-        "course_id" : "section__course__id",
-        "course_name" : "section__course__name",
-        "period" : "section__course__learning_period_month",
-        "setion_id" : "section__id",
-        "section_name" : "section__name",
-        "lecture_id" : "id",
-        "lecture_name" : "name",
-        "lecture_video_url" : "storage_path",
-        "lecture_runtime" : "play_time"
-    }
-
-    def get(self,request,course_id) :
-        lectures    = Lecture.objects.select_related('section', 'section__course').values(
-            *[self.key_match[key] for key in self.key_match]
-            ).prefetch_related('lecture_completion_by_lecture'
-            ).filter(section__course__id=course_id)
-        
-        if lectures.count() == 0 :
-            course_get = Course.objects.filter(id=course_id)
-            if not course_get.exists() :
-                return JsonResponse({"MESSAGE" : "invalid_course_id"}, status=400)
-            return JsonResponse({"MESSAGE" : "no_lecture_in_course"}, status=400)
-
-        
-        S_id_list   = self.get_S_list(lectures)
-        _L          = lectures[0]
-        
         result = {
-            "course_id"      : _L[self.key_match["course_id"]],
-            "course_name"    : _L[self.key_match["course_name"]],
-            "period"         : _L[self.key_match["period"]],
-            "section_legnth" : len(lectures),
-            "section_list"   : [{
-                "setion_id"     : S[0],
-                "section_name"  : S[1],
-                "lecture_list"  : [{
-                    "lecture_id"        : L[self.key_match["lecture_id"]],
-                    "lecture_name"      : L[self.key_match["lecture_name"]],
-                    "lecture_video_url" : L[self.key_match["lecture_video_url"]],
-                    "lecture_runtime"   : L[self.key_match["lecture_runtime"]],
-                    "finished"          : 0
-                } for L in lectures if L["section__id"] == S[0]]
-            } for S in S_id_list]
+            "course_id" : course.id,
+            "course_name" : course.name,
+            "period" : course.learning_period_month,
+            "section_length" : int(course.lectures_count),
+            "section_list" : [{
+                "section_id" : S.id,
+                "section_name" : S.name,
+                "lecture_list" : [{
+                    "lecture_id" : L.id,
+                    "lecture_name" : L.name,
+                    "lecture_video_url" : L.storage_path,
+                    "lecture_runtime" : L.play_time,
+                    "finished" : L.is_finished
+                } for L in S.lecture.all()]
+            }for S in course.sections.all()]
         }
 
-        user_id = self.get_user_id(request)
-        if user_id : 
-            boolean, message = self.check_user_finished_lecture(course_id, result, user_id)
-            if boolean :
-                result = message
-
         return JsonResponse(result)
+
+
 
 class LectureDetail(View) :
     def get_user_id(self,request) :
