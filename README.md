@@ -1,5 +1,5 @@
 
-# INFLEARN Clone Project (MECOOK)
+# INFLEARN Clone Project
   동영상 강의 플랫폼 사이트인 inflearn 웹사이트 클론.
 
 ## 개발 기간 / 개발 인원
