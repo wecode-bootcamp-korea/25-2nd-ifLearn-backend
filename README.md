@@ -33,15 +33,19 @@
 
 
 **김주형**
-* 
+* kakao server에서 유저 정보를 가져오는 API (``GET``)
+* 가져온 정보로 kakao social login 하는 API (``POST``)
+* 상품 카테고리 정보를 가져오는 API (``GET``)
+* 상품 리스트 필터링 & 검색 해서 가져오는 API (``GET``)
+* 상품 상세 정보 가져오는 API (``GET``)
 
 
 ## Endpoint
 * ``GET`` /courses/categories (navbar 카테고리 데이터)
 * ``GET`` /courses/video/<int:course_id> (영상 학습페이지 데이터)
 * ``GET`` /courses/video/detail/<int:lecture_id> (렉쳐 1개의 데이터)
-* ``GET`` /all (?)
-* ``GET`` /courses/<int:category_id>
-* ``GET`` /coruses/<int:category_id>/<int:sub_category_id> (?)
-* ``GET`` /course/<int:course_id> (?)
+* ``GET`` /all (모든 영상 리스트 데이터)
+* ``GET`` /courses/<int:category_id> (특정 카테고리에 해당하는 데이터)
+* ``GET`` /coruses/<int:category_id>/<int:sub_category_id> (특정 카테고리 + 특정 서브 카테고리에 해당하는 데이터)
+* ``GET`` /course/<int:course_id> (특정 영상의 세부정보 데이터)
 * ``GET`` /courses/<path> (동영상 스트리밍용 데이터)
