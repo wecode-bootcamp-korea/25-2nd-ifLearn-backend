@@ -49,3 +49,4 @@
 * ``GET`` /coruses/<int:category_id>/<int:sub_category_id> (특정 카테고리 + 특정 서브 카테고리에 해당하는 데이터)
 * ``GET`` /course/<int:course_id> (특정 영상의 세부정보 데이터)
 * ``GET`` /courses/<path> (동영상 스트리밍용 데이터)
+* ``POST`` /users/login (소셜 로그인)
